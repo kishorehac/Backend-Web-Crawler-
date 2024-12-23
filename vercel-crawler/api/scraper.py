@@ -1,26 +1,28 @@
+from aiohttp import web
 import json
-import random
-from urllib.parse import urljoin
-from playwright.sync_api import sync_playwright
-from aiohttp import ClientSession
+from playwright.async_api import async_playwright
 
-def fetch_dynamic_content(url):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto(url)
-        page.wait_for_timeout(3000)  # Allow content to load
-        content = page.content()
-        browser.close()
+async def fetch_dynamic_content(url):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.goto(url)
+        await page.wait_for_timeout(3000)
+        content = await page.content()
+        await browser.close()
         return content
 
-def handler(request):
-    url = request.args.get('url', '')
+async def handler(request):
+    url = request.query.get('url', '')
     if not url:
-        return 'No URL provided', 400
-    
+        return web.Response(text='No URL provided', status=400)
+
     try:
-        html = fetch_dynamic_content(url)
-        return json.dumps({'content': html})
+        html = await fetch_dynamic_content(url)
+        return web.Response(text=json.dumps({'content': html}), content_type='application/json')
     except Exception as e:
-        return json.dumps({'error': str(e)}), 500
+        return web.Response(text=json.dumps({'error': str(e)}), status=500, content_type='application/json')
+
+app = web.Application()
+app.router.add_get('/api/scraper', handler)
+
