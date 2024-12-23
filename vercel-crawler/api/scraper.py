@@ -40,5 +40,3 @@ async def handler(request):
 # No need to manually start the server. Vercel will invoke the handler.
 app = web.Application()
 app.router.add_get('/api/scraper', handler)
-
-
